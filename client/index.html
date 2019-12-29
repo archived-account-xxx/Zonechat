@@ -16,7 +16,7 @@
       padding: 10px 10px;
     }
     *{
-      color: black;
+      color: white;
     }
     #messages{
       overflow: scroll;
@@ -27,6 +27,7 @@
       left:0;
       width: 100%;
       padding: 10px 10px;
+      color: black;
     }
   </style>
 <!-- <script src="https://twemoji.maxcdn.com/v/latest/twemoji.min.js" crossorigin="anonymous"></script> -->
@@ -36,6 +37,10 @@
 <body>
 	<ul id='messages'></ul>
 	<form id="form">
+    <audio id="notfication" hidden>
+      <source src="https://res.cloudinary.com/polx/video/upload/v1577655697/Sounds/notification_xgyzgq.mp3" type="audio/mpeg">
+      Your browser doesn't support this. Interesting...
+    </audio>
 		<input onchange="changeMessage" onkeyup="checkEnter" id="input">
         <!-- <button>Send</button> -->
         </form>
@@ -45,7 +50,10 @@
           //   twemoji.parse(document.body);
           // },01)
           form = document.getElementById("form")
-          window.addEventListener("")
+          notification = document.getElementById("notification")
+          window.addEventListener("keydown",(e)=>{
+            document.getElementById("input").focus()
+          })
           form.addEventListener("submit",(e)=>{
             e.preventDefault()
             sendMessage(document.getElementById("input").value)
@@ -54,6 +62,11 @@
             var socket = io();
 
             socket.on('welcome', function(data) {
+                if(localStorage.getItem("nick") == null){
+                  name = data.id
+                }else{
+                  name = localStorage.getItem("nick")
+                }
                 addMessage(data.message);
 
                 // Respond with a message including this clients' id sent from the server
@@ -62,6 +75,9 @@
             socket.on("message",(data)=>{
               time = `${new Date().getHours()}:${new Date().getMinutes()}`
               if(data.time != time){
+                if(data.time == "normal"){
+                  addMessage(data.message,data.author)
+                }
                 a = data.time.split(":")
                 b = a[0] - new Date.getHours()
                 time = parseInt(time)
@@ -111,10 +127,42 @@
               }
             }
             function sendMessage(message) {
+              if(message.charAt(0) == "/"){
+                message = message.replace("/","")
+                if(message == "help"){
+                  addMessage(`/help - Shows the help command\n/nick <name> - Change your nickname to the name you specified\n/status <online/idle/dnd> - Set your status`)
+                }else if(message.startsWith("nick")){
+                  x = message.replace("nick","").replace(" ","")
+                  socket.emit("system",{
+                    "message":`${name} is now called "${x}"`,
+                    event: 3
+                  })
+                  name = x
+                  addMessage(`Your nickname has been changed to "${name}"`)
+                  localStorage.setItem("nick",name)
+                }else if(message.startsWith("status")){
+                  if(message.split(" ")[1] == undefined){
+                    addMessage("Please specify a status")
+                    return
+                  }else if(message.split(" ")[1] == ""){
+                    addMessage("Please specify a status")
+                    return
+                  }
+                  x = message.split(" ")[1]
+                  x = x.toLowerCase()
+                  if(x != "online" && x != "dnd" && x != "idle"){
+                    addMessage(`"${x}" is an invalid status`)
+                  }else{
+                    status = x
+                    addMessage(`You are now ${status}`)
+                  }
+                }
+                return
+              }
               time = `${new Date().getHours()}:${new Date().getMinutes()}`
               socket.emit("message",{
                 "message":message,
-                "author":"Human",
+                "author":name,
                 "time":time
               })
             }

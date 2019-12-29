@@ -1,6 +1,8 @@
 var http = require('http'),
-    connected = 0
-    fs = require('fs'),
+    connected = 0,
+    compression = require('compression'),
+    // nanoid = require("nanoid"),
+    fs = require('fs')
     // NEVER use a Sync function except at start-up!
     // index = fs.readFileSync(__dirname + '/client/index.html');
     console.log("working")
@@ -17,7 +19,8 @@ var io = require('socket.io').listen(app);
 
 // Send current time to all connected clients
 function sendTime() {
-    io.emit('time', { time: new Date().toJSON() });
+    // io.emit('time', { time: new Date().toJSON() });
+    console.log(new Date().toJSON())
 }
 
 // Send current time every 10 secs
@@ -27,7 +30,7 @@ setInterval(sendTime, 10000);
 io.on('connection', function(socket) {
     // Use socket to communicate with this particular client only, sending it it's own id
     connected = connected + 1
-    socket.emit('welcome', { message: 'Welcome!', id: socket.id });
+    socket.emit('welcome', { message: 'Welcome to Zonechat! Enter /help to see all commands', id: socket.id });
     socket.on('i am client', console.log);
     socket.on("disconnect",() => {
       connected = connected - 1
@@ -35,6 +38,14 @@ io.on('connection', function(socket) {
     socket.on("message",(data)=>{
       console.log(data)
       io.local.emit("message",data)
+    })
+    socket.on("system",(data)=>{
+      console.log(data)
+      io.local.emit("message",{
+        "message":data.message,
+        "author":"System",
+        "time":"normal"
+      })
     })
 });
 //Every 1 minute log how many people are connected
