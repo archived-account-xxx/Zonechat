@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta name="og:title" content="Zonechat">
+  <meta name="og:description" content="An asynchronous 'real' time chat app based on timezones">
+  <style>
+    body{
+      background-color: #333;
+      text-align: center;
+    }
+    button, input[type=submit]{
+      color: black;
+    }
+    .message{
+      padding: 10px 10px;
+    }
+    *{
+      color: black;
+    }
+    #messages{
+      overflow: scroll;
+    }
+    #input{
+      position: fixed;
+      bottom: 0;
+      left:0;
+      width: 100%;
+      padding: 10px 10px;
+    }
+  </style>
+<!-- <script src="https://twemoji.maxcdn.com/v/latest/twemoji.min.js" crossorigin="anonymous"></script> -->
+  <title>Zonechat</title>
+</head>
+
+<body>
+	<ul id='messages'></ul>
+	<form id="form">
+		<input onchange="changeMessage" onkeyup="checkEnter" id="input">
+        <!-- <button>Send</button> -->
+        </form>
+        <script src='/socket.io/socket.io.js'></script>
+        <script>
+          // setInterval(function(){
+          //   twemoji.parse(document.body);
+          // },01)
+          form = document.getElementById("form")
+          window.addEventListener("")
+          form.addEventListener("submit",(e)=>{
+            e.preventDefault()
+            sendMessage(document.getElementById("input").value)
+            document.getElementById("input").value = ""
+          })
+            var socket = io();
+
+            socket.on('welcome', function(data) {
+                addMessage(data.message);
+
+                // Respond with a message including this clients' id sent from the server
+                socket.emit('i am client', {data: 'foo!', id: data.id});
+            });
+            socket.on("message",(data)=>{
+              time = `${new Date().getHours()}:${new Date().getMinutes()}`
+              if(data.time != time){
+                a = data.time.split(":")
+                b = a[0] - new Date.getHours()
+                time = parseInt(time)
+                time = b * 3.6e+6
+                setTimeout(function(){
+                  addMessage(data.message,data.author)
+                },time)
+                return
+              }
+              addMessage(data.message,data.author)
+            })
+            socket.on('time', function(data) {
+                addMessage(data.time);
+            });
+            socket.on('error', console.error.bind(console));
+            socket.on('message', console.log.bind(console));
+
+            const input = document.getElementById()
+            var message = '';
+            function changeMessage(e,message) {
+              message = document.getElementById(e)
+              message.innerText = message
+            }
+
+            function checkEnter() {
+              if (event.keyCode === 13) {
+                // Cancel the default action, if needed
+                event.preventDefault();
+                // Trigger the button element with a click
+                document.getElementById("myBtn").click();
+              }
+            }
+
+            function addMessage(message,author){
+              if(author == undefined){
+                li = document.createElement("li")
+                li.innerText = `System: ${message}`
+                li.className = "message"
+                messages = document.getElementById("messages")
+                messages.append(li)
+              }else{
+                li = document.createElement("li")
+                li.innerText = `${author}: ${message}`
+                li.className = "message"
+                messages = document.getElementById("messages")
+                messages.append(li)
+              }
+            }
+            function sendMessage(message) {
+              time = `${new Date().getHours()}:${new Date().getMinutes()}`
+              socket.emit("message",{
+                "message":message,
+                "author":"Human",
+                "time":time
+              })
+            }
+        </script>
+    </body>
+</html>
